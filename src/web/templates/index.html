@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskPulse | Dynamic Task Engine & Local AI</title>
+  <meta name="description" content="Self-hosted, privacy-first task automation engine powered by local AI classification, Google Calendar sync, and real-time telemetry." />
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+
+  <div class="app-container">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">TaskPulse</h1>
+          <span class="brand-subtitle">Dynamic Task Engine & Local AI</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" id="navTabs">
+        <button class="nav-btn active" data-tab="intake">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          Intake Studio
+        </button>
+        <button class="nav-btn" data-tab="schedule">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          Schedule Timeline
+        </button>
+        <button class="nav-btn" data-tab="review">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          Evening Review
+        </button>
+        <button class="nav-btn" data-tab="ideas">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"></path></svg>
+          Idea Inbox
+        </button>
+        <button class="nav-btn" data-tab="telemetry">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
+          Observability
+        </button>
+      </nav>
+
+      <!-- System Health Indicator Badges -->
+      <div class="system-status">
+        <div class="status-chip" id="dbStatusChip" title="Storage Adapter Status">
+          <span class="status-dot dot-green"></span>
+          <span id="dbStatusText">SQLite Local</span>
+        </div>
+        <div class="status-chip" id="calendarStatusChip" title="Google Calendar Sync">
+          <span class="status-dot dot-amber" id="calDot"></span>
+          <span id="calStatusText">Calendar</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Tab Panels -->
+    <main class="content-area">
+      <!-- 1. INTAKE STUDIO TAB -->
+      <section class="tab-panel active" id="tab-intake">
+        <div class="grid-2-col">
+          <!-- Left: Input Card -->
+          <div class="glass-card intake-card">
+            <div class="card-header">
+              <div class="header-text">
+                <h2>Brain Dump & Task Decomposition</h2>
+                <p>Dump thoughts, meeting notes, or voice memos. TaskPulse AI will decompose them into structured goals, tasks, and subtasks.</p>
+              </div>
+              <div class="engine-badge">
+                <span class="pulse-indicator"></span>
+                <span id="activeAiLabel">Local / Groq AI</span>
+              </div>
+            </div>
+
+            <div class="textarea-wrapper">
+              <textarea id="intakeText" placeholder="e.g. Tomorrow I need to finish the client API documentation for 45 mins, then conduct 30 mins of performance load testing, and review PRs for 20 mins..." rows="8"></textarea>
+              
+              <!-- Floating Dictation Button inside textarea -->
+              <button class="btn-mic" id="btnMic" title="Toggle Voice Dictation">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div class="intake-actions">
+              <div class="voice-status" id="voiceStatusMsg">Voice dictation ready</div>
+              <button class="btn-primary" id="btnDecompose">
+                <span class="btn-text">Decompose & Plan</span>
+                <div class="spinner" id="decomposeSpinner"></div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Plan Preview Card -->
+          <div class="glass-card preview-card">
+            <div class="card-header">
+              <div class="header-text">
+                <h2>Structured Plan Preview</h2>
+                <p>Generated hierarchy, durations, and priority ranking.</p>
+              </div>
+            </div>
+
+            <div class="preview-content" id="planPreviewContainer">
+              <div class="empty-state">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <p>No plan parsed yet. Enter thoughts on the left and click <strong>Decompose & Plan</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. SCHEDULE TIMELINE TAB -->
+      <section class="tab-panel" id="tab-schedule">
+        <div class="glass-card">
+          <div class="card-header timeline-header">
+            <div>
+              <h2>Tomorrow's Dynamic Agenda</h2>
+              <p>Optimized time slots starting at 07:00 AM with automated buffer times and Deep Work prioritization.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn-secondary" id="btnRefreshSchedule">Refresh Tasks</button>
+              <button class="btn-primary" id="btnSyncCalendar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Schedule & Sync Calendar
+              </button>
+            </div>
+          </div>
+
+          <div class="timeline-container" id="timelineContainer">
+            <div class="empty-state">
+              <p>Loading schedule...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. EVENING REVIEW TAB -->
+      <section class="tab-panel" id="tab-review">
+        <div class="glass-card">
+          <div class="card-header">
+            <div>
+              <h2>Evening Review & Task Rollover</h2>
+              <p>Reflect on your accomplishments today. Mark completed tasks or roll over remaining work into tomorrow's schedule.</p>
+            </div>
+            <button class="btn-primary" id="btnSaveReview">Save Evening Review</button>
+          </div>
+
+          <div class="review-list" id="reviewContainer">
+            <div class="empty-state">
+              <p>Loading tasks for review...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. IDEA INBOX TAB -->
+      <section class="tab-panel" id="tab-ideas">
+        <div class="glass-card">
+          <div class="card-header">
+            <div>
+              <h2>Quick Idea Capture</h2>
+              <p>Staging area for fleeting thoughts, future goals, and raw project brainstorms.</p>
+            </div>
+          </div>
+
+          <div class="idea-input-group">
+            <input type="text" id="quickIdeaInput" placeholder="Got a quick spark? Type it here and hit Enter..." />
+            <button class="btn-primary" id="btnSaveIdea">Capture Idea</button>
+          </div>
+
+          <div class="ideas-grid" id="ideasGrid">
+            <div class="empty-state">
+              <p>Your idea inbox is empty.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. OBSERVABILITY & TELEMETRY TAB -->
+      <section class="tab-panel" id="tab-telemetry">
+        <div class="telemetry-dashboard">
+          <!-- Top Stat Cards -->
+          <div class="stats-grid">
+            <div class="stat-card glass-card">
+              <span class="stat-label">Average Latency</span>
+              <span class="stat-value" id="statAvgLatency">0 ms</span>
+              <span class="stat-sub">Across all AI inferences</span>
+            </div>
+            <div class="stat-card glass-card">
+              <span class="stat-label">Inference Success Rate</span>
+              <span class="stat-value text-green" id="statSuccessRate">100%</span>
+              <span class="stat-sub">Zero unhandled exceptions</span>
+            </div>
+            <div class="stat-card glass-card">
+              <span class="stat-label">Total Telemetry Traces</span>
+              <span class="stat-value" id="statTotalCalls">0</span>
+              <span class="stat-sub">Operations logged</span>
+            </div>
+            <div class="stat-card glass-card">
+              <span class="stat-label">Database Storage</span>
+              <span class="stat-value text-blue" id="statDbMode">SQLite</span>
+              <span class="stat-sub">Local zero-cost persistence</span>
+            </div>
+          </div>
+
+          <!-- Trace Table -->
+          <div class="glass-card">
+            <div class="card-header">
+              <h2>Recent Telemetry Traces</h2>
+              <button class="btn-secondary btn-sm" id="btnRefreshTelemetry">Refresh Metrics</button>
+            </div>
+            <div class="table-responsive">
+              <table class="telemetry-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Operation</th>
+                    <th>Model / Provider</th>
+                    <th>Latency (ms)</th>
+                    <th>Tokens</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="telemetryTableBody">
+                  <tr><td colspan="6" class="text-center">Loading telemetry traces...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Global Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
