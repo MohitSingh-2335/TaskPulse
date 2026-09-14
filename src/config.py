@@ -38,9 +38,10 @@ class Config:
     PROJECT_ROOT: Path = PROJECT_ROOT
     DATA_DIR: Path = PROJECT_ROOT / "data"
 
-    # Database Mode: 'sqlite' (default, free local) or 'supabase'
+    # Storage Paths
     DATABASE_MODE: str = os.environ.get("DATABASE_MODE", "sqlite").lower()
     SQLITE_PATH: Path = PROJECT_ROOT / os.environ.get("SQLITE_DB_PATH", "data/task_engine.db")
+    CHROMA_PERSIST_DIR: Path = PROJECT_ROOT / os.environ.get("CHROMA_PERSIST_DIR", "data/chroma")
 
     # Supabase (optional cloud store)
     SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "").rstrip("/")
