@@ -59,23 +59,42 @@ def update_task_endpoint(task_id: int):
         return jsonify({"ok": False, "error": {"type": exc.__class__.__name__, "message": str(exc)}}), 400
 
 
+@tasks_bp.route("/api/calendar/connect", methods=["POST", "GET"])
+def calendar_connect():
+    """Initiates interactive Google Calendar OAuth flow."""
+    try:
+        svc = get_calendar_service(allow_interactive=True)
+        if svc:
+            from src.core.calendar_sync import get_or_create_target_calendar
+            cal_id = get_or_create_target_calendar(svc)
+            return jsonify({"ok": True, "connected": True, "calendar_id": cal_id}), 200
+        return jsonify({"ok": False, "error": "Calendar authentication could not be completed"}), 400
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 500
+
+
 @tasks_bp.route("/api/schedule", methods=["POST"])
-def schedule_tasks_endpoint():
-    """Calculates tomorrow's timeline slots and syncs to Google Calendar if available."""
+def schedule_endpoint():
+    """Calculates schedule for tomorrow, syncing to Google Calendar if available."""
     body = request.get_json(silent=True) or {}
     start_hour = int(body.get("start_hour", 7))
     buffer_minutes = int(body.get("buffer_minutes", 15))
     time_zone = body.get("time_zone")
 
     try:
-        cal_service = get_calendar_service()
+        cal_service = get_calendar_service(allow_interactive=True)
         result = _service().schedule_pending_tasks(
             calendar_service=cal_service,
             start_hour=start_hour,
             buffer_minutes=buffer_minutes,
             timezone_name=time_zone,
         )
-        return jsonify({"ok": True, "status": "success", "schedule": result}), 200
+        return jsonify({
+            "ok": True,
+            "status": "success",
+            "calendar_linked": cal_service is not None,
+            "schedule": result,
+        }), 200
     except Exception as exc:
         return jsonify({"ok": False, "error": {"type": exc.__class__.__name__, "message": str(exc)}}), 500
 
