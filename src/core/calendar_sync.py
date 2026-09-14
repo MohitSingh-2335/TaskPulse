@@ -2,8 +2,15 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Optional
+
+# Ensure project root is in sys.path regardless of caller's current working directory
+_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from src.config import Config
 
