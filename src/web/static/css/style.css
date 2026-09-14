@@ -623,6 +623,21 @@ textarea:focus, input[type="text"]:focus {
 }
 .text-green { color: var(--success); }
 .text-blue { color: var(--cyan-accent); }
+.text-violet { color: var(--accent-secondary); }
+
+.badge-memory {
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease;
+}
 
 /* Telemetry Table */
 .table-responsive {
