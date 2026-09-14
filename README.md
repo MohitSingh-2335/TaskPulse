@@ -1,123 +1,166 @@
-# **Dynamic Daily Task Engine**
+# ⚡ TaskPulse: Dynamic Task Engine with Local AI & Observability
 
-The Dynamic Daily Task Engine is a Python backend for intake, planning, scheduling, rollover, and review. Supabase is the source of truth, Groq turns free-form intake into structured goals/tasks, and Google Calendar stores the schedule that the database state points to.
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.1-black.svg)](https://flask.palletsprojects.com/)
+[![Storage](https://img.shields.io/badge/Storage-SQLite%20%7C%20Supabase-emerald.svg)]()
+[![AI](https://img.shields.io/badge/AI-Local%20%7C%20Groq%20Fallback-violet.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-16%20Passed-brightgreen.svg)]()
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)]()
 
-## Canonical model
+> **TaskPulse** is a self-hosted, privacy-first, zero-cost task automation engine and productivity operating system. It bridges the gap between unstructured thought capture (voice memos, brain dumps, fleeting ideas) and disciplined calendar execution (time-blocking, priority ranking, evening review, and rollover).
 
-The backend now treats these records as the contract:
+---
+
+## 🌟 Key Highlights
+
+- 🧠 **Zero-Cost & Local-First Intelligence**: Operates 100% locally with an embedded SQLite database (`data/task_engine.db`) and smart offline heuristic task parser. Supports Local Ollama and Groq Cloud API (`llama-3.3-70b-versatile`) free-tier as optional AI providers.
+- 🎨 **Modern Glassmorphic Web Dashboard**: Single-page dark-mode web application featuring real-time speech dictation, visual timeline scheduling, interactive task checklists, and an evening review hub.
+- 📅 **Intelligent Google Calendar Time-Blocking**: Automatically organizes tasks for tomorrow starting at 07:00 AM with custom buffer intervals. Flags high-priority focus items as `[Deep Work]` with color highlights.
+- 🌙 **Evening Review & Rollover Engine**: Walk through your day's scheduled tasks, mark completed items, or roll over unfinished work with custom remaining minutes.
+- 💡 **Idea Staging Inbox**: Instantly capture fleeting thoughts and convert them into structured multi-step task plans with one click.
+- 📊 **Real-Time Telemetry & Observability**: Integrated performance observability tracking AI inference latency (ms), token metrics, and operational health.
+
+---
+
+## 🏗️ Architecture
 
 ```text
-goals: id, title, timeframe, status, source, created_at, updated_at
-tasks: id, goal_id, parent_task_id, task_kind, content, level, estimated_minutes, remaining_minutes, execution_order, priority, priority_rank, status, scheduled_start_at, scheduled_end_at, calendar_event_id, previous_calendar_event_id, rollover_count, source, created_at, updated_at
-ideas: id, content, status, source, created_at, updated_at
++-----------------------------------------------------------------------------------+
+|                                TASKPULSE SYSTEM                                   |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [ Web UI Dashboard ]   <----->  [ REST API Layer ]  <----->  [ Task Service ]    |
+|  - Brain Dump Intake             - Flask Endpoints            - Hierarchy Engine  |
+|  - Voice Dictation               - CORS Enabled               - Slot Calculator   |
+|  - Calendar Timeline             - Health / Readiness         - Review / Rollover |
+|  - Evening Review Hub                                                             |
+|  - Telemetry Dashboard                                                            |
+|                                                                                   |
++---------------------------+-----------------------------------+-------------------+
+                            |                                   |
+                            v                                   v
+             [ Local AI & Observability ]              [ Dual-Mode Storage ]
+             - Local LLM / Ollama                      - Local SQLite (Default)
+             - Groq Free-Tier Fallback                 - Zero-cost & offline
+             - Rule-based Heuristic Fallback           - Supabase PostgreSQL
+             - Telemetry Logger (Latency, Tokens)      - Cloud sync if active
+                            |                                   |
+                            +-----------------+-----------------+
+                                              |
+                                              v
+                                   [ External Integrations ]
+                                   - Google Calendar API (v3)
+                                   - Google OAuth2 Flow
++-----------------------------------------------------------------------------------+
 ```
 
-## Prerequisites
+---
 
-- Python 3.9+
-- A Supabase account and project
-- A Google Cloud project with the **Google Calendar API** enabled
-- A Groq API key
+## 📁 Repository Structure
 
-## Environment
+```text
+Dynamic-Daily-Task-Engine/
+├── .env.example                # Safe environment variable template
+├── .gitignore                  # Robust security & secret ignore rules
+├── README.md                   # Documentation & setup guide
+├── requirements.txt            # Core dependencies
+├── run.py                      # Main launcher (starts Web Dashboard & API)
+├── docs/                       # Architecture & documentation
+│   ├── ARCHITECTURE.md         # Full architecture specification
+│   ├── TASK_ENGINE_MERGE_BLUEPRINT.md # Master merge specification
+│   └── schema.sql              # Database schema (SQLite & PostgreSQL)
+├── src/                        # Modular source code
+│   ├── app.py                  # Flask App factory & dashboard router
+│   ├── config.py               # Centralized configuration & auto .env loader
+│   ├── core/                   # Domain services & integrations
+│   │   ├── database.py         # SQLite & Supabase dual-storage adapter
+│   │   ├── task_service.py     # Scheduling, priority, and rollover logic
+│   │   └── calendar_sync.py    # Google Calendar OAuth & event syncing
+│   ├── local_ai/               # Local AI & Observability suite
+│   │   ├── engine.py           # Unified inference (Ollama / Groq / Heuristic)
+│   │   ├── parser.py           # Structured JSON plan extraction
+│   │   ├── voice.py            # Audio transcription handler
+│   │   └── telemetry.py        # Latency, token, and health tracking
+│   ├── api/                    # REST API routes
+│   │   ├── routes_tasks.py     # Task, review, idea, and schedule endpoints
+│   │   └── routes_ai.py        # Intake and telemetry endpoints
+│   └── web/                    # Modern Web Dashboard
+│       ├── templates/
+│       │   └── index.html      # Responsive dashboard SPA
+│       └── static/
+│           ├── css/style.css   # Dark glassmorphism design system
+│           └── js/app.js       # Voice dictation, timeline, and review logic
+└── tests/                      # Automated test suite
+    ├── test_database.py        # Database CRUD & schema tests
+    ├── test_task_service.py    # Scheduling math & rollover tests
+    ├── test_ai_parser.py       # JSON extraction & heuristic parser tests
+    └── test_api.py             # Full REST API integration tests
+```
 
-Set these variables for local runs and Vercel:
+---
 
+## 🚀 Quickstart
+
+### 1. Prerequisites
+- Python 3.9+ installed on your system.
+
+### 2. Installation
+Clone the repository and install the dependencies:
 ```bash
-SUPABASE_URL=
-SUPABASE_KEY=
-GROQ_API_KEY=
-GOOGLE_CREDENTIALS_FILE=credentials.json
-GOOGLE_TOKEN_FILE=token.json
-DEFAULT_TIME_ZONE=Asia/Kolkata
-SCHEDULE_START_HOUR=7
-SCHEDULE_BUFFER_MINUTES=15
+git clone https://github.com/MohitSingh-2335/Dynamic-Daily-Task-Engine.git
+cd Dynamic-Daily-Task-Engine
+pip install -r requirements.txt
 ```
 
-`SUPABASE_URL`, `SUPABASE_KEY`, `GROQ_API_KEY`, and Google Calendar credentials are required for the full intake-to-schedule flow.
-
-> **Note**: To obtain `credentials.json`, create an OAuth 2.0 Client ID (Desktop app type) in the Google Cloud Console, download the JSON file, rename it to `credentials.json`, and place it in the root directory.
-
-## Supabase setup
-
-Create these tables before running the app:
-
-```sql
-create table if not exists goals (
-	id bigint generated by default as identity primary key,
-	title text not null,
-	timeframe text not null default 'Daily',
-	status text not null default 'Planned',
-	source text not null default 'api',
-	created_at timestamptz not null default now(),
-	updated_at timestamptz not null default now()
-);
-
-create table if not exists tasks (
-	id bigint generated by default as identity primary key,
-	goal_id bigint not null references goals(id) on delete cascade,
-	parent_task_id bigint references tasks(id) on delete cascade,
-	task_kind text not null default 'task',
-	content text not null,
-	level integer not null default 1,
-	estimated_minutes integer not null default 30,
-	remaining_minutes integer not null default 30,
-	execution_order integer not null default 1,
-	priority text not null default 'Medium',
-	priority_rank integer not null default 2,
-	status text not null default 'Pending',
-	scheduled_start_at timestamptz,
-	scheduled_end_at timestamptz,
-	calendar_event_id text,
-	previous_calendar_event_id text,
-	rollover_count integer not null default 0,
-	source text not null default 'api',
-	created_at timestamptz not null default now(),
-	updated_at timestamptz not null default now()
-);
-
-create table if not exists ideas (
-	id bigint generated by default as identity primary key,
-	content text not null,
-	status text not null default 'Unread',
-	source text not null default 'manual',
-	created_at timestamptz not null default now(),
-	updated_at timestamptz not null default now()
-);
+### 3. Configure Environment (Optional)
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
 ```
+*Note: By default, TaskPulse uses the zero-cost local SQLite database and offline rule-based parser without requiring any external keys.*
 
-## Run locally
+If you want cloud LLM acceleration or Google Calendar sync:
+- Set `GROQ_API_KEY` in `.env` for free fast inference.
+- Place `credentials.json` (from Google Cloud Console OAuth Desktop App) in the root directory to sync with Google Calendar.
 
-1. Install dependencies with `pip install -r requirements.txt`.
-2. Export the environment variables above.
-3. Start the API with `python -m flask --app api.index run` or run `python api/index.py` for the local Flask server path.
-4. Authenticate Google Calendar once with `python google_auth.py` so `token.json` is created.
+### 4. Launch TaskPulse
+Start the application:
+```bash
+python run.py
+```
+Open your browser and navigate to:
+👉 **`http://127.0.0.1:5000`**
 
-## Deploy on Vercel
+---
 
-Deploy `api/index.py` as the Python entrypoint. The included `vercel.json` routes all requests to the API module, so `/api/health`, `/api/readiness`, `/api/intake`, `/api/plan`, `/api/schedule`, and `/api/review` are available from the deployed app.
+## 🧪 Running Automated Tests
 
-## API Endpoints
+Run the full automated test suite (database, services, AI parsers, REST endpoints):
+```bash
+python -m pytest tests/ -v
+```
+All 16 tests verify schema migration, schedule calculations, rollover increments, and API contracts.
 
-**Base URL**: `https://dynamic-daily-task-engine.vercel.app`
+---
 
-- **`POST /api/intake`**: Accepts `{"text": "..."}` or audio file uploads to parse tasks/goals. (e.g., `https://dynamic-daily-task-engine.vercel.app/api/intake`)
-- **`POST /api/plan`**: Processes ideas and updates task relationships/priorities.
-- **`POST /api/schedule`**: Pushes pending tasks to Google Calendar events.
-- **`GET /api/review`**: Fetches the current state of tasks (scheduled, pending, etc.).
-- **`POST /api/review`**: Accepts updates to tasks (e.g., marking as complete or rolling over).
-- **`GET /api/health` & `GET /api/readiness`**: Basic system and database health checks. (e.g., `https://dynamic-daily-task-engine.vercel.app/api/health`)
+## 🔌 API Endpoints Reference
 
-## Smoke test
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Web Dashboard Interface |
+| `GET` | `/api/health` | Health check & service status |
+| `GET` | `/api/readiness` | Database storage & calendar connection readiness |
+| `POST` | `/api/intake` | Converts unstructured text into structured goals and tasks |
+| `POST` | `/api/plan` | Directly creates a goal and task plan |
+| `GET` | `/api/status` | Returns a snapshot of scheduled, pending, and completed tasks |
+| `POST` | `/api/schedule` | Time-blocks pending tasks and syncs with Google Calendar |
+| `GET` | `/api/review` | Fetches tasks scheduled for today |
+| `POST` | `/api/review` | Applies completion or rollover updates |
+| `GET` | `/api/ideas` | Lists unread ideas from the idea inbox |
+| `POST` | `/api/ideas` | Captures a quick idea |
+| `GET` | `/api/telemetry` | Returns AI latency, token usage, and observability logs |
 
-Use one intake payload, one schedule run, one review update, and one status check:
+---
 
-1. `POST /api/intake` with `{"text":"Plan a project sprint and break it into tasks"}`.
-2. `POST /api/schedule` to push pending tasks into Google Calendar.
-3. `GET /api/review` to confirm scheduled and pending state.
-4. `POST /api/review` with updates that mark one task completed and rollover another unfinished task.
-5. `GET /api/readiness` and `GET /api/health` to verify deploy readiness and liveness.
-
-## Notes
-
-`db_setup.py` is now a Supabase readiness helper rather than a SQLite bootstrapper. `idea_inbox.py`, `voice_inbox.py`, `update_progress.py`, and `main_engine.py` all call the same shared service layer so intake, scheduling, and review stay in sync.
+## 📄 License
+This project is open-source under the MIT License.
