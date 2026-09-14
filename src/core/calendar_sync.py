@@ -7,7 +7,12 @@ from typing import Any, Dict, Optional
 
 from src.config import Config
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/calendar.events",
+]
+
+_cached_calendar_id: Optional[str] = None
 
 
 def get_calendar_credentials():
@@ -81,6 +86,43 @@ def get_calendar_service():
         return None
 
 
+def get_or_create_target_calendar(service) -> str:
+    """
+    Returns the target Google Calendar ID.
+    Guarantees isolation to a dedicated sub-calendar (e.g. 'TaskPulse')
+    so the user's primary calendar is NEVER touched or modified.
+    """
+    global _cached_calendar_id
+    if _cached_calendar_id:
+        return _cached_calendar_id
+
+    # 1. Explicit ID in Config
+    if Config.GOOGLE_CALENDAR_ID:
+        _cached_calendar_id = Config.GOOGLE_CALENDAR_ID
+        return _cached_calendar_id
+
+    target_name = (Config.GOOGLE_CALENDAR_NAME or "TaskPulse").strip()
+
+    try:
+        # 2. Search existing calendars
+        calendar_list = service.calendarList().list().execute()
+        for item in calendar_list.get("items", []):
+            if item.get("summary", "").strip().lower() == target_name.lower():
+                _cached_calendar_id = item["id"]
+                return _cached_calendar_id
+
+        # 3. If not found, automatically create the dedicated sub-calendar
+        new_calendar = service.calendars().insert(body={
+            "summary": target_name,
+            "description": "Dynamic task schedule managed by TaskPulse",
+            "timeZone": Config.DEFAULT_TIME_ZONE,
+        }).execute()
+        _cached_calendar_id = new_calendar.get("id")
+        return _cached_calendar_id
+    except Exception as exc:
+        raise RuntimeError(f"Could not locate or create dedicated sub-calendar '{target_name}': {exc}")
+
+
 def is_calendar_connected() -> bool:
     """Checks whether valid Google Calendar credentials exist."""
     return get_calendar_service() is not None
@@ -112,3 +154,14 @@ def format_calendar_event(
         "end": {"dateTime": end_at.isoformat(), "timeZone": timezone_name},
         "colorId": "11" if is_deep_work else "9",  # Red for Deep Work, Blue for Standard
     }
+
+
+if __name__ == "__main__":
+    print("Initiating Google Calendar OAuth Authentication...")
+    svc = get_calendar_service()
+    if svc:
+        cal_id = get_or_create_target_calendar(svc)
+        print(f"Successfully authenticated! Dedicated sub-calendar: '{Config.GOOGLE_CALENDAR_NAME}' (ID: {cal_id})")
+    else:
+        print("Authentication failed or cancelled.")
+
