@@ -20,5 +20,8 @@ google-auth-httplib2>=0.1.0
 # Testing
 pytest>=8.0.0
 
+# Local Vector Memory (RAG)
+chromadb>=1.5.0
+
 # Optional Cloud Database (if using Supabase instead of Local SQLite)
 supabase>=2.0.0
