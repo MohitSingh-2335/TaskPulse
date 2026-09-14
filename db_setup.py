@@ -1,26 +1,28 @@
 from __future__ import annotations
 
-from api.service import build_service
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.core.database import get_database
 
 
-def create_schema():
-    service = build_service()
-    readiness = service.readiness_report()
-    print(readiness)
-
-
-def insert_seed_data():
-    print("Seed data is managed in Supabase; apply the schema in README before running intake.")
-
-
-def fetch_pending_tasks():
-    tasks = build_service().list_pending_parent_tasks()
-    for task in tasks:
-        print(f"ID: {task.get('id')} | Priority: {task.get('priority')} | Title: {task.get('content')} | Duration: {task.get('remaining_minutes') or task.get('estimated_minutes')} mins")
-    return tasks
+def check_db_readiness():
+    db = get_database()
+    report = db.get_readiness()
+    print("\n[TaskPulse] Storage Readiness Report")
+    print("========================================")
+    print(f"Mode:  {report.get('mode', 'sqlite').upper()}")
+    print(f"Ready: {'[OK]' if report.get('ready') else '[FAIL]'}")
+    print(f"Path:  {report.get('path')}")
+    print("Tables:")
+    for tbl, status in report.get("tables", {}).items():
+        print(f"  * {tbl}: {status}")
+    print()
 
 
 if __name__ == "__main__":
-    create_schema()
-    insert_seed_data()
-    fetch_pending_tasks()
+    check_db_readiness()
