@@ -17,6 +17,7 @@ data/*.db
 data/*.db-journal
 data/*.sqlite
 data/*.sqlite3
+data/chroma/
 data/telemetry.jsonl
 *.db
 *.sqlite
