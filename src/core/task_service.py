@@ -217,6 +217,13 @@ class TaskService:
                 })
                 if up:
                     updated_tasks.append(up)
+                    # Automatically index completed task into local vector memory
+                    try:
+                        from src.local_ai.memory import get_memory_manager
+                        subtasks = self.get_task_children(task_id)
+                        get_memory_manager().index_task(up, subtasks=subtasks)
+                    except Exception:
+                        pass
 
             # Case B: Rollover
             elif item.get("remaining_minutes") is not None or str(item.get("status")).lower() in ("pending", "rollover"):
