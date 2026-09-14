@@ -159,6 +159,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const goal = planPayload.goal || {};
     const tasks = planPayload.tasks || [];
 
+    const memoryBadgeContainer = document.getElementById('memoryBadgeContainer');
+    if (memoryBadgeContainer) {
+      const count = telemetry?.memories_count || 0;
+      if (count > 0) {
+        memoryBadgeContainer.innerHTML = `<span class="badge-memory" title="${count} past tasks referenced from local ChromaDB">🧠 ${count} past memories referenced</span>`;
+      } else {
+        memoryBadgeContainer.innerHTML = `<span class="badge-duration" style="font-size: 0.75rem;">Vector RAG Active</span>`;
+      }
+    }
+
     let html = `
       <div class="preview-goal">
         <div class="preview-goal-title">🎯 Goal: ${goal.title || 'Daily Goal'}</div>
@@ -441,7 +451,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.getElementById('statAvgLatency').textContent = `${stats.avg_latency_ms || 0} ms`;
       document.getElementById('statSuccessRate').textContent = `${stats.success_rate || 100}%`;
-      document.getElementById('statTotalCalls').textContent = stats.total_calls || 0;
+      const statTotalCalls = document.getElementById('statTotalCalls');
+      if (statTotalCalls) statTotalCalls.textContent = stats.total_calls || 0;
+
+      // Fetch Vector Memory Stats from local ChromaDB
+      try {
+        const memRes = await fetch('/api/memory');
+        const memData = await memRes.json();
+        const statVector = document.getElementById('statVectorCount');
+        if (statVector && memData.ok && memData.memory) {
+          statVector.textContent = memData.memory.total_memories ?? 0;
+        }
+      } catch (memErr) {
+        console.warn('Vector memory fetch failed:', memErr);
+      }
 
       const tbody = document.getElementById('telemetryTableBody');
       const traces = stats.recent_logs || [];
