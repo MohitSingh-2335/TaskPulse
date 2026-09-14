@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from src.config import Config
-from src.core.calendar_sync import format_calendar_event
+from src.core.calendar_sync import format_calendar_event, get_or_create_target_calendar
 from src.core.database import SQLiteAdapter, get_database
 
 PRIORITY_MAP = {"High": 1, "Medium": 2, "Low": 3}
@@ -131,6 +131,13 @@ class TaskService:
         scheduled_results: List[Dict[str, Any]] = []
         failed_results: List[Dict[str, Any]] = []
 
+        target_cal_id = None
+        if calendar_service:
+            try:
+                target_cal_id = get_or_create_target_calendar(calendar_service)
+            except Exception as exc:
+                failed_results.append({"task_id": "calendar_init", "error": f"Could not access sub-calendar: {exc}"})
+
         for task in pending:
             duration = int(task.get("remaining_minutes") or task.get("estimated_minutes") or 30)
             start_at = current_slot
@@ -139,10 +146,10 @@ class TaskService:
             event_id = None
             checklist = self.render_subtasks_checklist(task["id"])
 
-            if calendar_service:
+            if calendar_service and target_cal_id:
                 event_body = format_calendar_event(task, checklist, start_at, end_at, display_zone)
                 try:
-                    res = calendar_service.events().insert(calendarId="primary", body=event_body).execute()
+                    res = calendar_service.events().insert(calendarId=target_cal_id, body=event_body).execute()
                     event_id = res.get("id")
                 except Exception as exc:
                     failed_results.append({"task_id": task["id"], "error": str(exc)})
