@@ -15,8 +15,8 @@ SCOPES = [
 _cached_calendar_id: Optional[str] = None
 
 
-def get_calendar_credentials():
-    """Retrieves or refreshes Google OAuth2 Credentials."""
+def get_calendar_credentials(allow_interactive: bool = False):
+    """Retrieves or refreshes Google OAuth2 Credentials without blocking unless requested."""
     try:
         from google.auth.transport.requests import Request
         from google.oauth2.credentials import Credentials
@@ -52,8 +52,8 @@ def get_calendar_credentials():
                         f.write(creds.to_json())
             except Exception:
                 creds = None
-        else:
-            # Full OAuth flow needed - only if credentials.json is present
+        elif allow_interactive:
+            # Full OAuth flow needed - only if explicitly allowed interactively
             credentials_json_str = os.environ.get("GOOGLE_CREDENTIALS_JSON")
             if credentials_json_str:
                 try:
@@ -74,9 +74,9 @@ def get_calendar_credentials():
     return creds
 
 
-def get_calendar_service():
+def get_calendar_service(allow_interactive: bool = False):
     """Builds and returns the Google Calendar API Resource client."""
-    creds = get_calendar_credentials()
+    creds = get_calendar_credentials(allow_interactive=allow_interactive)
     if not creds:
         return None
     try:
@@ -158,7 +158,7 @@ def format_calendar_event(
 
 if __name__ == "__main__":
     print("Initiating Google Calendar OAuth Authentication...")
-    svc = get_calendar_service()
+    svc = get_calendar_service(allow_interactive=True)
     if svc:
         cal_id = get_or_create_target_calendar(svc)
         print(f"Successfully authenticated! Dedicated sub-calendar: '{Config.GOOGLE_CALENDAR_NAME}' (ID: {cal_id})")
