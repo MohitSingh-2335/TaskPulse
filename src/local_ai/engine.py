@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import urllib.request
 import urllib.error
 
+from src.config import Config
 from src.local_ai.memory import get_memory_manager
 from src.local_ai.parser import INTAKE_SYSTEM_PROMPT, extract_json_payload, parse_brain_dump_heuristically
 from src.local_ai.telemetry import TelemetryTracker
