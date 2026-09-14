@@ -57,6 +57,8 @@ class Config:
     DEFAULT_TIME_ZONE: str = os.environ.get("DEFAULT_TIME_ZONE", "Asia/Kolkata")
     SCHEDULE_START_HOUR: int = int(os.environ.get("SCHEDULE_START_HOUR", "7"))
     SCHEDULE_BUFFER_MINUTES: int = int(os.environ.get("SCHEDULE_BUFFER_MINUTES", "15"))
+    GOOGLE_CALENDAR_NAME: str = os.environ.get("GOOGLE_CALENDAR_NAME", "TaskPulse")
+    GOOGLE_CALENDAR_ID: str = os.environ.get("GOOGLE_CALENDAR_ID", "")
     GOOGLE_CREDENTIALS_FILE: Path = PROJECT_ROOT / os.environ.get("GOOGLE_CREDENTIALS_FILE", "credentials.json")
     GOOGLE_TOKEN_FILE: Path = PROJECT_ROOT / os.environ.get("GOOGLE_TOKEN_FILE", "token.json")
 
