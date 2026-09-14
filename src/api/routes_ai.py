@@ -35,7 +35,9 @@ def intake_endpoint():
                 "provider": inference_res.get("provider"),
                 "model": inference_res.get("model"),
                 "latency_ms": inference_res.get("latency_ms"),
+                "memories_count": len(inference_res.get("memories_referenced") or []),
             },
+            "memories_referenced": inference_res.get("memories_referenced") or [],
         }), 201
     except Exception as exc:
         return jsonify({"ok": False, "error": {"type": exc.__class__.__name__, "message": str(exc)}}), 500
@@ -49,3 +51,19 @@ def telemetry_endpoint():
         return jsonify({"ok": True, "telemetry": summary}), 200
     except Exception as exc:
         return jsonify({"ok": False, "error": str(exc)}), 500
+
+
+@ai_bp.route("/api/memory", methods=["GET"])
+def memory_endpoint():
+    """Returns local vector memory statistics and optional semantic search."""
+    from src.local_ai.memory import get_memory_manager
+    mgr = get_memory_manager()
+
+    query = request.args.get("query", "").strip()
+    if query:
+        matches = mgr.search_similar_tasks(query, top_k=5)
+        return jsonify({"ok": True, "query": query, "matches": matches}), 200
+
+    stats = mgr.get_memory_stats()
+    return jsonify({"ok": True, "memory": stats}), 200
+
