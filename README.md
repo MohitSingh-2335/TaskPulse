@@ -1,166 +1,88 @@
-# ⚡ TaskPulse: Dynamic Task Engine with Local AI & Observability
+# Dynamic Daily Task Engine (TaskPulse)
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-3.1-black.svg)](https://flask.palletsprojects.com/)
-[![Storage](https://img.shields.io/badge/Storage-SQLite%20%7C%20Supabase-emerald.svg)]()
-[![AI](https://img.shields.io/badge/AI-Local%20%7C%20Groq%20Fallback-violet.svg)]()
-[![Tests](https://img.shields.io/badge/Tests-16%20Passed-brightgreen.svg)]()
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)]()
+A local-first task engine that converts unstructured text and voice notes into prioritized daily schedules with Google Calendar synchronization and local vector memory.
 
-> **TaskPulse** is a self-hosted, privacy-first, zero-cost task automation engine and productivity operating system. It bridges the gap between unstructured thought capture (voice memos, brain dumps, fleeting ideas) and disciplined calendar execution (time-blocking, priority ranking, evening review, and rollover).
+## Overview
 
----
+Translating raw thoughts and voice notes into an actionable schedule requires manual task breakdown, realistic duration estimates, and calendar coordination. TaskPulse parses free-form text or voice input into structured goal and subtask hierarchies using a tiered AI pipeline (local Ollama, Groq Cloud API, or offline regex heuristics), calibrates estimates using historical completion patterns retrieved from ChromaDB, and schedules non-overlapping time blocks in Google Calendar. The automated test suite achieves a 100% pass rate across 19 unit and integration tests.
 
-## 🌟 Key Highlights
+## Results
 
-- 🧠 **Zero-Cost & Local-First Intelligence**: Operates 100% locally with an embedded SQLite database (`data/task_engine.db`) and smart offline heuristic task parser. Supports Local Ollama and Groq Cloud API (`llama-3.3-70b-versatile`) free-tier as optional AI providers.
-- 🎨 **Modern Glassmorphic Web Dashboard**: Single-page dark-mode web application featuring real-time speech dictation, visual timeline scheduling, interactive task checklists, and an evening review hub.
-- 📅 **Intelligent Google Calendar Time-Blocking**: Automatically organizes tasks for tomorrow starting at 07:00 AM with custom buffer intervals. Flags high-priority focus items as `[Deep Work]` with color highlights.
-- 🌙 **Evening Review & Rollover Engine**: Walk through your day's scheduled tasks, mark completed items, or roll over unfinished work with custom remaining minutes.
-- 💡 **Idea Staging Inbox**: Instantly capture fleeting thoughts and convert them into structured multi-step task plans with one click.
-- 📊 **Real-Time Telemetry & Observability**: Integrated performance observability tracking AI inference latency (ms), token metrics, and operational health.
+| Metric | Value | Dataset and Size | How Measured | Source File |
+|---|---|---|---|---|
+| Automated Test Pass Rate | 100% (19 passed) | 19 test functions across 5 test files | `pytest -v` unit and integration assertions | `tests/` |
+| Heuristic Parsing Accuracy | Exact duration & priority extraction | 4 multi-line task strings with duration units | Regex pattern matching (`mins`, `hours`, priority terms) | `src/local_ai/parser.py`, `tests/test_ai_parser.py` |
+| Semantic Memory Retrieval | Top-1 match (`task_id: 101`, 60m duration) | 2 indexed tasks with subtask structures | ChromaDB cosine similarity query on "OAuth and token expired" | `src/local_ai/memory.py`, `tests/test_memory.py` |
+| Schedule Arithmetic Precision | 0 ms overlap (+15 min buffer) | 2-task pending queue (30m, 45m) | Datetime calculation starting at `SCHEDULE_START_HOUR` | `src/core/task_service.py`, `tests/test_task_service.py` |
+| Telemetry Tracking | Latency (ms), token usage, status | 13 runtime execution traces | `time.perf_counter()` context manager logged to SQLite | `src/local_ai/telemetry.py`, `data/task_engine.db` |
 
----
+## How It Works
 
-## 🏗️ Architecture
+1. **Intake**: Raw text or audio memos enter via the web interface or `POST /api/intake`.
+2. **Context Retrieval**: `AIEngine` queries ChromaDB for the 3 most semantically similar past tasks to provide historical duration and priority context.
+3. **Decomposition**: The engine routes through local Ollama (`llama3:8b`), Groq API (`llama-3.3-70b-versatile`), or an offline regex heuristic parser to generate structured JSON plans.
+4. **Persistence & Observability**: Goals, Level-1 tasks, and Level-2 subtasks are stored in SQLite (`data/task_engine.db`), while `TelemetryTracker` records inference latency in milliseconds and token counts.
+5. **Time-Blocking**: `TaskService` calculates chronological slots for tomorrow starting at 07:00 AM with 15-minute buffers, creating events in an isolated Google Calendar ("TaskPulse") so primary calendars remain untouched.
+6. **Review & Rollover**: Completed tasks are auto-indexed into ChromaDB for future retrieval, while incomplete tasks roll over with incremented rollover counts.
 
-```text
-+-----------------------------------------------------------------------------------+
-|                                TASKPULSE SYSTEM                                   |
-+-----------------------------------------------------------------------------------+
-|                                                                                   |
-|  [ Web UI Dashboard ]   <----->  [ REST API Layer ]  <----->  [ Task Service ]    |
-|  - Brain Dump Intake             - Flask Endpoints            - Hierarchy Engine  |
-|  - Voice Dictation               - CORS Enabled               - Slot Calculator   |
-|  - Calendar Timeline             - Health / Readiness         - Review / Rollover |
-|  - Evening Review Hub                                                             |
-|  - Telemetry Dashboard                                                            |
-|                                                                                   |
-+---------------------------+-----------------------------------+-------------------+
-                            |                                   |
-                            v                                   v
-             [ Local AI & Observability ]              [ Dual-Mode Storage ]
-             - Local LLM / Ollama                      - Local SQLite (Default)
-             - Groq Free-Tier Fallback                 - Zero-cost & offline
-             - Rule-based Heuristic Fallback           - Supabase PostgreSQL
-             - Telemetry Logger (Latency, Tokens)      - Cloud sync if active
-                            |                                   |
-                            +-----------------+-----------------+
-                                              |
-                                              v
-                                   [ External Integrations ]
-                                   - Google Calendar API (v3)
-                                   - Google OAuth2 Flow
-+-----------------------------------------------------------------------------------+
-```
+## Features
 
----
+- **Cascading AI Decomposition**: Parses raw text into goals, tasks, and subtasks using Ollama, Groq, or an offline rule-based heuristic fallback.
+- **Local RAG Task Memory**: Indexes completed tasks into ChromaDB vector storage to ground future task planning on past completion history.
+- **Isolated Calendar Time-Blocking**: Automatically formats and schedules tasks into a dedicated "TaskPulse" Google Calendar without altering primary calendar events.
+- **Evening Review & Rollover**: Tracks daily execution, increments rollover counters for unfinished work, and preserves remaining minute estimates.
+- **Real-Time Telemetry**: Automatically records operation latency (ms), token usage, and error status for every pipeline execution into SQLite.
 
-## 📁 Repository Structure
+## Tech Stack
 
-```text
-Dynamic-Daily-Task-Engine/
-├── .env.example                # Safe environment variable template
-├── .gitignore                  # Robust security & secret ignore rules
-├── README.md                   # Documentation & setup guide
-├── requirements.txt            # Core dependencies
-├── run.py                      # Main launcher (starts Web Dashboard & API)
-├── docs/                       # Architecture & documentation
-│   ├── ARCHITECTURE.md         # Full architecture specification
-│   ├── TASK_ENGINE_MERGE_BLUEPRINT.md # Master merge specification
-│   └── schema.sql              # Database schema (SQLite & PostgreSQL)
-├── src/                        # Modular source code
-│   ├── app.py                  # Flask App factory & dashboard router
-│   ├── config.py               # Centralized configuration & auto .env loader
-│   ├── core/                   # Domain services & integrations
-│   │   ├── database.py         # SQLite & Supabase dual-storage adapter
-│   │   ├── task_service.py     # Scheduling, priority, and rollover logic
-│   │   └── calendar_sync.py    # Google Calendar OAuth & event syncing
-│   ├── local_ai/               # Local AI & Observability suite
-│   │   ├── engine.py           # Unified inference (Ollama / Groq / Heuristic)
-│   │   ├── parser.py           # Structured JSON plan extraction
-│   │   ├── voice.py            # Audio transcription handler
-│   │   └── telemetry.py        # Latency, token, and health tracking
-│   ├── api/                    # REST API routes
-│   │   ├── routes_tasks.py     # Task, review, idea, and schedule endpoints
-│   │   └── routes_ai.py        # Intake and telemetry endpoints
-│   └── web/                    # Modern Web Dashboard
-│       ├── templates/
-│       │   └── index.html      # Responsive dashboard SPA
-│       └── static/
-│           ├── css/style.css   # Dark glassmorphism design system
-│           └── js/app.js       # Voice dictation, timeline, and review logic
-└── tests/                      # Automated test suite
-    ├── test_database.py        # Database CRUD & schema tests
-    ├── test_task_service.py    # Scheduling math & rollover tests
-    ├── test_ai_parser.py       # JSON extraction & heuristic parser tests
-    └── test_api.py             # Full REST API integration tests
-```
+Python, Flask, SQLite, ChromaDB, Groq API, Google Calendar API, Pytest
 
----
+## Run Locally
 
-## 🚀 Quickstart
-
-### 1. Prerequisites
-- Python 3.9+ installed on your system.
-
-### 2. Installation
-Clone the repository and install the dependencies:
 ```bash
+# 1. Clone the repository
 git clone https://github.com/MohitSingh-2335/Dynamic-Daily-Task-Engine.git
 cd Dynamic-Daily-Task-Engine
+
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure Environment (Optional)
-Copy `.env.example` to `.env`:
-```bash
+# 3. Configure environment (optional, defaults to local SQLite and heuristic parser)
 cp .env.example .env
-```
-*Note: By default, TaskPulse uses the zero-cost local SQLite database and offline rule-based parser without requiring any external keys.*
 
-If you want cloud LLM acceleration or Google Calendar sync:
-- Set `GROQ_API_KEY` in `.env` for free fast inference.
-- Place `credentials.json` (from Google Cloud Console OAuth Desktop App) in the root directory to sync with Google Calendar.
-
-### 4. Launch TaskPulse
-Start the application:
-```bash
+# 4. Start the application server
 python run.py
+
+# 5. Open the web dashboard
+# Navigate to http://127.0.0.1:5000 in your browser
 ```
-Open your browser and navigate to:
-👉 **`http://127.0.0.1:5000`**
 
----
+## Tests
 
-## 🧪 Running Automated Tests
+19 test functions across 5 test files covering database operations, task service scheduling, AI parsing, ChromaDB vector memory, and REST API routes.
 
-Run the full automated test suite (database, services, AI parsers, REST endpoints):
 ```bash
-python -m pytest tests/ -v
+pytest tests/ -v
 ```
-All 16 tests verify schema migration, schedule calculations, rollover increments, and API contracts.
 
----
+## Project Structure
 
-## 🔌 API Endpoints Reference
+- `api/` - Vercel serverless functions and backward-compatibility entrypoints.
+- `data/` - Local SQLite database (`task_engine.db`) and ChromaDB vector persistence files.
+- `docs/` - System architecture specification, database schemas, and merge blueprints.
+- `src/` - Application source code (Flask app, config, domain services, local AI, and web UI).
+- `tests/` - Automated unit and integration test suite.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Web Dashboard Interface |
-| `GET` | `/api/health` | Health check & service status |
-| `GET` | `/api/readiness` | Database storage & calendar connection readiness |
-| `POST` | `/api/intake` | Converts unstructured text into structured goals and tasks |
-| `POST` | `/api/plan` | Directly creates a goal and task plan |
-| `GET` | `/api/status` | Returns a snapshot of scheduled, pending, and completed tasks |
-| `POST` | `/api/schedule` | Time-blocks pending tasks and syncs with Google Calendar |
-| `GET` | `/api/review` | Fetches tasks scheduled for today |
-| `POST` | `/api/review` | Applies completion or rollover updates |
-| `GET` | `/api/ideas` | Lists unread ideas from the idea inbox |
-| `POST` | `/api/ideas` | Captures a quick idea |
-| `GET` | `/api/telemetry` | Returns AI latency, token usage, and observability logs |
+## Limitations
 
----
+- Audio transcription via local Whisper requires the optional `openai-whisper` package or browser Web Speech API.
+- Google Calendar synchronization requires OAuth desktop credentials (`credentials.json`) from Google Cloud Console.
+- Cloud LLM acceleration requires a valid `GROQ_API_KEY` (system defaults to the offline heuristic parser if omitted).
 
-## 📄 License
+## License
+
 This project is open-source under the MIT License.
+
+---
+
+Mohit Singh | [GitHub](https://github.com/MohitSingh-2335) | [LinkedIn](https://www.linkedin.com/in/mohit-singh-172548253/) | [Portfolio](https://mohitsingh-2335.github.io/)
